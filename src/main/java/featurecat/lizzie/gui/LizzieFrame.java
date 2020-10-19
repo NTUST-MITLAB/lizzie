@@ -32,7 +32,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
@@ -95,7 +94,7 @@ public class LizzieFrame extends MainFrame {
   private static Menu menu;
   private JPanel mainPanel;
 
-  private final BufferStrategy bs;
+  // private final BufferStrategy bs;
 
   private static final int[] outOfBoundCoordinate = new int[] {-1, -1};
   public int[] mouseOverCoordinate = outOfBoundCoordinate;
@@ -150,6 +149,7 @@ public class LizzieFrame extends MainFrame {
         new JPanel(true) {
           @Override
           protected void paintComponent(Graphics g) {
+            Utils.mustBeEventDispatchThread();
             super.paintComponent(g);
 
             paintMainPanel(g);
@@ -218,8 +218,8 @@ public class LizzieFrame extends MainFrame {
 
     setVisible(true);
 
-    createBufferStrategy(2);
-    bs = getBufferStrategy();
+    // createBufferStrategy(2);
+    // bs = getBufferStrategy();
 
     Input input = new Input();
 
@@ -274,6 +274,13 @@ public class LizzieFrame extends MainFrame {
     if (winrateGraph != null) {
       winrateGraph.clear();
     }
+  }
+
+  public void addNotify() {
+    // needless?
+    // https://stackoverflow.com/questions/3435994/buffers-have-not-been-created-whilst-creating-buffers
+    super.addNotify();
+    createBufferStrategy(2);
   }
 
   private BufferedImage cachedImage;
@@ -910,6 +917,7 @@ public class LizzieFrame extends MainFrame {
 
     Leelaz.WinrateStats stats = Lizzie.leelaz.getWinrateStats();
     double curWR = stats.maxWinrate; // winrate on this move
+    double curSM = Lizzie.leelaz.scoreMean;
     boolean validWinrate = (stats.totalPlayouts > 0); // and whether it was actually calculated
     boolean validScore = validWinrate;
     if (!validWinrate) {
@@ -924,11 +932,13 @@ public class LizzieFrame extends MainFrame {
     if (!validWinrate) {
       curWR = 100 - lastWR; // display last move's winrate for now (with color difference)
     }
-    double whiteWR, blackWR;
+    double whiteWR, blackWR, blackSM;
     if (Lizzie.board.getData().blackToPlay) {
       blackWR = curWR;
+      blackSM = curSM;
     } else {
       blackWR = 100 - curWR;
+      blackSM = -curSM;
     }
 
     whiteWR = 100 - blackWR;
@@ -1042,7 +1052,14 @@ public class LizzieFrame extends MainFrame {
           winString,
           barPosxB + maxBarwidth - sw - 2 * strokeRadius,
           posY + barHeight - 2 * strokeRadius);
-
+      if (Lizzie.leelaz.isKataGo && validScore) {
+        String scoreString = String.format("%.1f", blackSM);
+        sw = g.getFontMetrics().stringWidth(scoreString);
+        g.drawString(
+            scoreString,
+            barPosxB + maxBarwidth / 2 - sw / 2 - strokeRadius,
+            posY + barHeight - 2 * strokeRadius);
+      }
       g.setColor(Color.GRAY);
       Stroke oldstroke = g.getStroke();
       Stroke dashed =
@@ -1186,6 +1203,14 @@ public class LizzieFrame extends MainFrame {
           Lizzie.board.goToMoveNumberBeyondBranch(moveNumber);
         }
       }
+    }
+  }
+
+  public void onCenterClicked(int x, int y) {
+    boolean isWinrateGraphClicked = (winrateGraph.moveNumber(x, y) >= 0);
+    if (isWinrateGraphClicked) {
+      Lizzie.config.toggleLargeWinrate();
+      repaint();
     }
   }
 
@@ -1430,14 +1455,16 @@ public class LizzieFrame extends MainFrame {
     thread.start();
   }
 
-  public void removeEstimateRect() {
+  protected void removeEstimateRectInEDT() {
+    Utils.mustBeEventDispatchThread();
     boardRenderer.removeEstimateRect();
     if (Lizzie.config.showSubBoard) {
       subBoardRenderer.removeEstimateRect();
     }
   }
 
-  public void drawEstimateRectKata(ArrayList<Double> estimateArray) {
+  protected void drawEstimateRectKataInEDT(ArrayList<Double> estimateArray) {
+    Utils.mustBeEventDispatchThread();
     if (!Lizzie.config.showKataGoEstimate) {
       return;
     }
@@ -1498,11 +1525,13 @@ public class LizzieFrame extends MainFrame {
     if (byToolBar) countResults.setVisible(false);
   }
 
-  public void updateEngineMenu(List<Leelaz> engineList) {
+  protected void updateEngineMenuInEDT(List<Leelaz> engineList) {
+    Utils.mustBeEventDispatchThread();
     menu.updateEngineMenu(engineList);
   }
 
-  public void updateEngineIcon(List<Leelaz> engineList, int currentEngineNo) {
+  protected void updateEngineIconInEDT(List<Leelaz> engineList, int currentEngineNo) {
+    Utils.mustBeEventDispatchThread();
     menu.updateEngineIcon(engineList, currentEngineNo);
   }
 
@@ -1519,6 +1548,9 @@ public class LizzieFrame extends MainFrame {
       return false;
     }
     if (isPlayingAgainstLeelaz) {
+      return false;
+    }
+    if (!Lizzie.config.useAvoidInAnalysis()) {
       return false;
     }
     if (Lizzie.leelaz.isPondering()) {

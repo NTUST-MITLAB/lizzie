@@ -47,6 +47,9 @@ public class WinratePane extends LizziePane {
           public void mouseClicked(MouseEvent e) {
             if (e.getButton() == MouseEvent.BUTTON1) { // left click
               onClicked(e.getX(), e.getY());
+            } else if (e.getButton() == MouseEvent.BUTTON2) { // center click
+              Lizzie.config.toggleLargeWinrate();
+              owner.invalidLayout();
             }
           }
         });
@@ -129,6 +132,7 @@ public class WinratePane extends LizziePane {
 
     Leelaz.WinrateStats stats = Lizzie.leelaz.getWinrateStats();
     double curWR = stats.maxWinrate; // winrate on this move
+    double curSM = Lizzie.leelaz.scoreMean;
     boolean validWinrate = (stats.totalPlayouts > 0); // and whether it was actually calculated
     if (!validWinrate) {
       // ref. drawMoveStatistics() in LizzieFrame.java
@@ -144,11 +148,13 @@ public class WinratePane extends LizziePane {
     if (!validWinrate) {
       curWR = 100 - lastWR; // display last move's winrate for now (with color difference)
     }
-    double whiteWR, blackWR;
+    double whiteWR, blackWR, blackSM;
     if (Lizzie.board.getData().blackToPlay) {
       blackWR = curWR;
+      blackSM = curSM;
     } else {
       blackWR = 100 - curWR;
+      blackSM = -curSM;
     }
 
     whiteWR = 100 - blackWR;
@@ -263,7 +269,14 @@ public class WinratePane extends LizziePane {
           winString,
           barPosxB + maxBarwidth - sw - 2 * strokeRadius,
           posY + barHeight - 2 * strokeRadius);
-
+      if (Lizzie.leelaz.isKataGo && validScore) {
+        String scoreString = String.format("%.1f", blackSM);
+        sw = g.getFontMetrics().stringWidth(scoreString);
+        g.drawString(
+            scoreString,
+            barPosxB + maxBarwidth / 2 - sw / 2 - strokeRadius,
+            posY + barHeight - 2 * strokeRadius);
+      }
       g.setColor(Color.GRAY);
       Stroke oldstroke = g.getStroke();
       Stroke dashed =

@@ -1247,6 +1247,7 @@ public class Menu extends JMenuBar {
               Lizzie.leelaz.isThinking = false;
             }
             Lizzie.leelaz.togglePonder();
+            Lizzie.frame.refresh();
           }
         });
     analyzeMenu.add(toggleAnalyze);
@@ -1384,8 +1385,14 @@ public class Menu extends JMenuBar {
       engine[i].setVisible(false);
       Leelaz engineDt = engineList.get(i);
       if (engineDt != null) {
-        if (engineDt.currentWeight() != "")
-          engine[i].setText(engine[i].getText() + " : " + engineDt.currentWeight());
+        //        if (engineDt.currentWeight() != "")
+        //          engine[i].setText(engine[i].getText() + " : " + engineDt.currentWeight());
+        // if (engineDt.engineCommand() != "")
+        //  engine[i].setText(engine[i].getText() + " : " + engineDt.engineCommand());
+        // if (engineDt.getCurrentCommandListItem(0) != "")
+        //  engine[i].setText(engine[i].getText() + " : " + engineDt.getCurrentCommandListItem(0));
+        if (engineDt.nicknameOrEngineCommand() != "")
+          engine[i].setText(engine[i].getText() + " : " + engineDt.nicknameOrEngineCommand());
         engine[i].setVisible(true);
         int a = i;
         engine[i].addActionListener(

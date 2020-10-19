@@ -78,6 +78,7 @@ public class Leelaz {
 
   // for Multiple Engine
   private String engineCommand;
+  private String engineNickname;
   private List<String> commands;
   private JSONObject config;
   private String currentWeightFile = "";
@@ -128,6 +129,14 @@ public class Leelaz {
       // substitute in the weights file
       engineCommand = engineCommand.replaceAll("%network-file", config.getString("network-file"));
     }
+    Matcher nicknameMatcher = Pattern.compile("<([^<]*)>\\s*(.*)").matcher(engineCommand);
+    if (nicknameMatcher.matches()) {
+      engineNickname = nicknameMatcher.group(1);
+      engineCommand = nicknameMatcher.group(2);
+    } else {
+      engineNickname = null;
+    }
+
     this.engineCommand = engineCommand;
     if (engineCommand.toLowerCase().contains("override-version")) {
       this.isKataGo = true;
@@ -344,14 +353,6 @@ public class Leelaz {
       } else if (line.equals("\n")) {
         // End of response
       } else if (line.startsWith("info")) {
-        if (!isLoaded) {
-          Lizzie.frame.refresh();
-        }
-        isLoaded = true;
-        // Clear switching prompt
-        switching = false;
-        // Display engine command in the title
-        Lizzie.frame.updateTitle();
         if (isAnalysisUpToDate()) {
           // This should not be stale data when the command number match
           if (isKataGo) {
@@ -404,6 +405,14 @@ public class Leelaz {
         isThinking = false;
 
       } else if (line.startsWith("=") || line.startsWith("?")) {
+        if (!isLoaded) {
+          Lizzie.frame.refresh();
+        }
+        isLoaded = true;
+        // Clear switching prompt
+        switching = false;
+        // Display engine command in the title
+        Lizzie.frame.updateTitle();
         if (printCommunication || gtpConsole) {
           System.out.print(line);
           Lizzie.gtpConsole.addLine(line);
@@ -726,7 +735,11 @@ public class Leelaz {
   public void ponder() {
     isPondering = true;
     startPonderTime = System.currentTimeMillis();
-    if (Lizzie.board.isAvoding && Lizzie.board.isKeepingAvoid && !isKataGo)
+    // if (Lizzie.board.isAvoding && Lizzie.board.isKeepingAvoid && !isKataGo)
+    if (Lizzie.board.isAvoding
+        && Lizzie.board.isKeepingAvoid
+        && !isKataGo
+        && Lizzie.config.useAvoidInAnalysis())
       analyzeAvoid(
           "avoid b "
               + Lizzie.board.avoidCoords
@@ -987,6 +1000,14 @@ public class Leelaz {
     return isKataGo || supportScoremean;
   }
 
+  public String nicknameOrCurrentWeight() {
+    return (engineNickname == null) ? currentWeight : engineNickname;
+  }
+
+  public String nicknameOrEngineCommand() {
+    return (engineNickname == null) ? engineCommand : engineNickname;
+  }
+
   public String currentWeight() {
     return currentWeight;
   }
@@ -1097,5 +1118,9 @@ public class Leelaz {
       writerThread.writerQueue.addLast(command);
       writerThread.notify();
     }
+  }
+
+  public String getCurrentCommandListItem(int arrayIndex) {
+    return this.commands.get(arrayIndex);
   }
 }

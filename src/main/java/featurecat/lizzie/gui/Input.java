@@ -28,6 +28,10 @@ public class Input implements MouseListener, KeyListener, MouseWheelListener, Mo
     } else if (e.getButton() == MouseEvent.BUTTON3) // right click
     {
       if (!Lizzie.frame.openRightClickMenu(e.getX(), e.getY())) undo(1);
+      // Lizzie.frame.onRightClicked(e.getX(), e.getY());
+    }
+    if (e.getButton() == MouseEvent.BUTTON2) { // center click
+      Lizzie.frame.onCenterClicked(e.getX(), e.getY());
     }
   }
 
@@ -51,7 +55,16 @@ public class Input implements MouseListener, KeyListener, MouseWheelListener, Mo
   }
 
   @Override
-  public void keyTyped(KeyEvent e) {}
+  public void keyTyped(KeyEvent e) {
+    /*  char _keyChar = e.getKeyChar();
+    System.out.println("key typed event with char " + String.format("0x%02X", _keyChar));
+    switch (_keyChar) {
+      case VK_SPACE:
+        System.out.println("Space key typed");
+        break;
+      default:
+    }*/
+  }
 
   public static void undo() {
     undo(1);
@@ -185,7 +198,9 @@ public class Input implements MouseListener, KeyListener, MouseWheelListener, Mo
     // This is probably the user attempting to exit analysis mode.
     boolean shouldDisableAnalysis = true;
     int refreshType = 1;
-
+    // System.out.println("KeyPressed_event");
+    // int _keyCode = e.getKeyCode();
+    // System.out.println("Key Code :" + String.format("0x%02X", _keyCode));
     switch (e.getKeyCode()) {
       case VK_E:
         Lizzie.frame.toggleGtpConsole();
@@ -251,14 +266,16 @@ public class Input implements MouseListener, KeyListener, MouseWheelListener, Mo
         if (Lizzie.leelaz.isPondering()) Lizzie.leelaz.togglePonder();
         Lizzie.frame.startGame();
         break;
-      case VK_SPACE:
+
+        // move space key detection to keyreleased
+        /*case VK_SPACE:
         if (Lizzie.frame.isPlayingAgainstLeelaz) {
-          Lizzie.frame.isPlayingAgainstLeelaz = false;
-          Lizzie.leelaz.isThinking = false;
-        }
-        Lizzie.leelaz.togglePonder();
-        refreshType = 2;
-        break;
+                Lizzie.frame.isPlayingAgainstLeelaz = false;
+                Lizzie.leelaz.isThinking = false;
+              }
+              Lizzie.leelaz.togglePonder();
+              refreshType = 2;
+              break;*/
 
       case VK_P:
         Lizzie.board.pass();
@@ -554,6 +571,17 @@ public class Input implements MouseListener, KeyListener, MouseWheelListener, Mo
       case VK_Z:
         stopTemporaryBoard();
         Lizzie.frame.refresh(1);
+        break;
+      case VK_SPACE:
+        boolean shouldDisableAnalysis = true;
+        int refreshType = 2;
+        if (Lizzie.frame.isPlayingAgainstLeelaz) {
+          Lizzie.frame.isPlayingAgainstLeelaz = false;
+          Lizzie.leelaz.isThinking = false;
+        }
+        Lizzie.leelaz.togglePonder();
+        if (shouldDisableAnalysis && Lizzie.board.inAnalysisMode()) Lizzie.board.toggleAnalysis();
+        Lizzie.frame.refresh(refreshType);
         break;
 
       default:

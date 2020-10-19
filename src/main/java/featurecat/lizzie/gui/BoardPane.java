@@ -118,7 +118,8 @@ public class BoardPane extends LizziePane {
               // if (Lizzie.frame.isMouseOver) {
               //  Lizzie.frame.addSuggestionAsBranch();
               // } else {
-              if (!Lizzie.frame.openRightClickMenu(e.getX(), e.getY())) Input.undo();
+              // if (!Lizzie.frame.openRightClickMenu(e.getX(), e.getY())) Input.undo();
+              Lizzie.frame.onRightClicked(e.getX(), e.getY());
               // }
             }
           }
@@ -144,8 +145,13 @@ public class BoardPane extends LizziePane {
         });
   }
 
+  protected void checkRightClick(MouseEvent e) {
+    // cancel default behavior of LizziePane
+  }
+
   /** Clears related status from empty board. */
   public void clear() {
+    Utils.mustBeEventDispatchThread();
     if (LizzieMain.winratePane != null) {
       LizzieMain.winratePane.clear();
     }
@@ -162,6 +168,7 @@ public class BoardPane extends LizziePane {
    */
   @Override
   protected void paintComponent(Graphics g0) {
+    Utils.mustBeEventDispatchThread();
     super.paintComponent(g0);
     autosaveMaybe();
 
@@ -219,6 +226,7 @@ public class BoardPane extends LizziePane {
 
   /** Display the controls */
   void drawControls() {
+    Utils.mustBeEventDispatchThread();
     userAlreadyKnowsAboutCommandString = true;
 
     cachedImage = new BufferedImage(getWidth(), getHeight(), TYPE_INT_ARGB);
@@ -343,8 +351,8 @@ public class BoardPane extends LizziePane {
       if (!owner.isPlayingAgainstLeelaz
           || (owner.playerIsBlack == Lizzie.board.getData().blackToPlay))
         Lizzie.board.place(coords[0], coords[1]);
-      //      repaint();
-      //      owner.updateStatus();
+      repaint();
+      owner.updateStatus();
     }
   }
 

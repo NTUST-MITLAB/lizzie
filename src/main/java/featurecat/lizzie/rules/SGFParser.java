@@ -29,6 +29,7 @@ public class SGFParser {
   private static final String[] listProps =
       new String[] {"LB", "CR", "SQ", "MA", "TR", "AB", "AW", "AE"};
   private static final String[] markupProps = new String[] {"LB", "CR", "SQ", "MA", "TR"};
+  private static final String defaultEncoding = "UTF-8";
 
   public static boolean load(String filename) throws IOException {
     // Clear the board
@@ -40,8 +41,13 @@ public class SGFParser {
     }
 
     String encoding = EncodingDetector.detect(filename);
-    if (encoding == "WINDOWS-1252") encoding = "gb2312";
+    System.out.println("current encoding : " + encoding);
+    if (encoding == "WINDOWS-1252") {
+      encoding = "gb2312";
+      System.out.println("encoding changed to gb2312");
+    }
     FileInputStream fp = new FileInputStream(file);
+    // encoding = defaultEncoding;
     InputStreamReader reader = new InputStreamReader(fp, encoding);
     StringBuilder builder = new StringBuilder();
     while (reader.ready()) {
@@ -567,7 +573,9 @@ public class SGFParser {
   }
 
   public static void save(Board board, String filename) throws IOException {
-    try (Writer writer = new OutputStreamWriter(new FileOutputStream(filename))) {
+    String encoding = defaultEncoding;
+    try (Writer writer = new OutputStreamWriter(new FileOutputStream(filename), encoding)) {
+      // try (Writer writer = new OutputStreamWriter(new FileOutputStream(filename))) {
       saveToStream(board, writer);
     }
   }

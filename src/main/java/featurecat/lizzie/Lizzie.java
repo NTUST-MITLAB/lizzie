@@ -10,6 +10,7 @@ import featurecat.lizzie.rules.Board;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -29,9 +30,18 @@ public class Lizzie {
     setLookAndFeel();
     mainArgs = args;
     config = new Config();
+    SwingUtilities.invokeLater(
+        new Runnable() {
+          public void run() {
+            mainInEDT();
+          }
+        });
+  }
+
+  private static void mainInEDT() {
     frame = config.panelUI ? new LizzieMain() : new LizzieFrame();
     gtpConsole = new GtpConsolePane(frame);
-    gtpConsole.setVisible(config.leelazConfig.optBoolean("print-comms", false));
+    gtpConsole.setVisible(config.persistedUi.optBoolean("gtp-console-opened", false));
     initializeEngineManager();
   }
 
@@ -89,6 +99,7 @@ public class Lizzie {
     board.autosaveToMemory();
 
     try {
+      config.save();
       config.persist();
     } catch (IOException e) {
       e.printStackTrace(); // Failed to save config
